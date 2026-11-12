@@ -17,3 +17,9 @@ class UserResponse(BaseModel):
     id: str
     name: str
     email: EmailStr
+
+
+# Schema for updating profile
+class UserUpdate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=50)
+    email: EmailStr
