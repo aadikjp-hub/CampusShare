@@ -3,10 +3,11 @@ import os
 import secrets
 import hashlib
 import hmac
-import smtplib
+import json
+import urllib.request
+import urllib.error
 
 from datetime import datetime, timedelta, timezone
-from email.message import EmailMessage
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -62,14 +63,10 @@ class ResendOTP(BaseModel):
 # ==========================================
 
 def current_time():
-    # Store UTC timestamps as naive UTC datetimes.
-    # PyMongo returns naive UTC datetimes by default.
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def normalize_datetime(value):
-    # Convert timezone-aware or naive MongoDB dates
-    # into comparable naive UTC datetimes.
     if value is None:
         return None
 
@@ -89,7 +86,7 @@ def normalize_email(email):
 
 def create_access_token(user_id: str):
     if not JWT_SECRET:
-        raise RuntimeError("JWT_SECRET is missing from .env")
+        raise RuntimeError("JWT_SECRET is missing from environment variables")
 
     expire = current_time() + timedelta(
         minutes=TOKEN_EXPIRE_MINUTES
@@ -113,7 +110,7 @@ def create_access_token(user_id: str):
 
 def hash_otp(email, otp):
     if not JWT_SECRET:
-        raise RuntimeError("JWT_SECRET is missing from .env")
+        raise RuntimeError("JWT_SECRET is missing from environment variables")
 
     message = f"{email}:{otp}".encode("utf-8")
 
@@ -137,30 +134,29 @@ def format_user(user):
 
 
 # ==========================================
-# SEND OTP EMAIL
+# SEND OTP EMAIL USING RESEND
 # ==========================================
 
 def send_otp_email(email, otp):
 
-    smtp_email = os.getenv("SMTP_EMAIL")
-    smtp_password = os.getenv("SMTP_PASSWORD")
-    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    resend_api_key = os.getenv("RESEND_API_KEY")
 
-    if not smtp_email or not smtp_password:
+    sender_email = os.getenv(
+        "RESEND_FROM_EMAIL",
+        "onboarding@resend.dev"
+    )
+
+    if not resend_api_key:
         raise HTTPException(
             status_code=500,
-            detail="Email service is not configured. Check backend .env."
+            detail="Resend API key is not configured."
         )
 
-    message = EmailMessage()
-
-    message["Subject"] = "CampusShare Email Verification"
-    message["From"] = smtp_email
-    message["To"] = email
-
-    message.set_content(
-        f"""
+    payload = {
+        "from": f"CampusShare <{sender_email}>",
+        "to": [email],
+        "subject": "CampusShare Email Verification",
+        "text": f"""
 Hello,
 
 Welcome to CampusShare!
@@ -176,25 +172,53 @@ Please do not share this code with anyone.
 Thank you,
 CampusShare Team
 """
+    }
+
+    request = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {resend_api_key}",
+            "Content-Type": "application/json"
+        },
+        method="POST"
     )
 
     try:
-        with smtplib.SMTP(
-            smtp_host,
-            smtp_port,
-            timeout=15
-        ) as server:
+        with urllib.request.urlopen(
+            request,
+            timeout=20
+        ) as response:
 
-            server.starttls()
-            server.login(smtp_email, smtp_password)
-            server.send_message(message)
+            result = response.read().decode("utf-8")
 
-    except Exception as error:
-        print("SMTP EMAIL ERROR:", repr(error))
+            print("RESEND EMAIL SUCCESS:", result)
+
+    except urllib.error.HTTPError as error:
+
+        error_body = error.read().decode(
+            "utf-8",
+            errors="replace"
+        )
+
+        print(
+            "RESEND API ERROR:",
+            error.code,
+            error_body
+        )
 
         raise HTTPException(
             status_code=503,
-            detail="Unable to send OTP email. Check Gmail SMTP settings."
+            detail="Unable to send OTP email. Check Resend API and sender settings."
+        )
+
+    except Exception as error:
+
+        print("RESEND EMAIL ERROR:", repr(error))
+
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to send OTP email. Please try again."
         )
 
 
@@ -207,7 +231,7 @@ def get_authenticated_user(
 ):
 
     if not JWT_SECRET:
-        raise RuntimeError("JWT_SECRET is missing from .env")
+        raise RuntimeError("JWT_SECRET is missing from environment variables")
 
     try:
         payload = jwt.decode(
@@ -278,11 +302,13 @@ def register_user(user: UserRegister):
     now = current_time()
 
     if pending:
+
         resend_after = normalize_datetime(
             pending.get("resend_after")
         )
 
         if resend_after and now < resend_after:
+
             remaining = int(
                 (resend_after - now).total_seconds()
             )
@@ -397,7 +423,6 @@ def verify_email_otp(data: VerifyOTP):
             detail="Incorrect OTP. Please try again."
         )
 
-    # Check whether this account existed before OTP was introduced.
     existing_user = db.users.find_one({
         "email": email
     })
@@ -470,7 +495,6 @@ def resend_otp(data: ResendOTP):
         "email": email
     })
 
-    # Support old accounts that were created before OTP verification.
     if not pending:
 
         existing_user = db.users.find_one({
@@ -530,7 +554,11 @@ def resend_otp(data: ResendOTP):
         upsert=True
     )
 
-    send_otp_email(email, otp)
+    try:
+        send_otp_email(email, otp)
+
+    except HTTPException:
+        raise
 
     return {
         "message": "A new verification OTP has been sent."
