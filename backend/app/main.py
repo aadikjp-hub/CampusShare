@@ -16,7 +16,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "http://localhost:5174"
+        "http://localhost:5174",
+        "https://campus-share-sigma-blush.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -26,6 +27,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(resources_router)
 app.include_router(images.router)
+
 
 @app.get("/")
 def home():
