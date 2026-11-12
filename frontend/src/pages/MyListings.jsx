@@ -19,7 +19,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const API_URL = "http://127.0.0.1:8001";
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8001";
 
 const categories = ["All", "Books", "Electronics", "Notes", "Stationery", "Sports", "Other"];
 const conditions = ["New", "Like New", "Good", "Used"];
