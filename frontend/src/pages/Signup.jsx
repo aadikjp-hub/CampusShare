@@ -17,6 +17,7 @@ export default function Signup() {
     email: "",
     password: "",
   });
+
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,13 +42,18 @@ export default function Signup() {
         password: formData.password,
       });
 
-      navigate("/verify-email", {
-        state: {
-          email: response.data.email || formData.email.trim().toLowerCase(),
-        },
-      });
+      // Save authentication details
+      localStorage.setItem("access_token", response.data.access_token);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+
+      // Redirect to dashboard
+      navigate("/", { replace: true });
+
     } catch (err) {
-      setError(err.response?.data?.detail || "Registration failed. Please try again.");
+      setError(
+        err.response?.data?.detail ||
+        "Registration failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -55,11 +61,19 @@ export default function Signup() {
 
   return (
     <main className="min-h-screen bg-[#080d1b] lg:grid lg:grid-cols-2">
+
       {/* Left branding panel */}
       <section className="relative hidden min-h-screen overflow-hidden bg-gradient-to-br from-[#111a32] via-[#10182b] to-[#25152b] px-12 py-10 lg:flex lg:flex-col lg:justify-between xl:px-20">
         <div className="absolute -left-32 top-32 h-96 w-96 rounded-full bg-orange-500/15 blur-3xl" />
         <div className="absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-purple-500/15 blur-3xl" />
-        <div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.3) 1px, transparent 1px)", backgroundSize: "42px 42px" }} />
+        <div
+          className="absolute inset-0 opacity-[0.08]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.3) 1px, transparent 1px)",
+            backgroundSize: "42px 42px"
+          }}
+        />
 
         <Link to="/" className="relative z-10 flex w-fit items-center gap-3">
           <div className="rounded-2xl bg-orange-500 p-3 text-white shadow-lg shadow-orange-500/30">
@@ -90,11 +104,26 @@ export default function Signup() {
 
           <div className="mt-12 space-y-4">
             {[
-              { icon: BookOpen, title: "Share learning resources", detail: "Books, notes and study essentials" },
-              { icon: Users, title: "Connect with students", detail: "Build a helpful campus community" },
-              { icon: GraduationCap, title: "Make more possible", detail: "Access what you need, when you need it" },
+              {
+                icon: BookOpen,
+                title: "Share learning resources",
+                detail: "Books, notes and study essentials"
+              },
+              {
+                icon: Users,
+                title: "Connect with students",
+                detail: "Build a helpful campus community"
+              },
+              {
+                icon: GraduationCap,
+                title: "Make more possible",
+                detail: "Access what you need, when you need it"
+              },
             ].map(({ icon: Icon, title, detail }) => (
-              <div key={title} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
+              <div
+                key={title}
+                className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur"
+              >
                 <div className="rounded-xl bg-orange-400/15 p-3 text-orange-400">
                   <Icon size={22} />
                 </div>
@@ -118,6 +147,7 @@ export default function Signup() {
         <div className="absolute -bottom-24 -left-20 h-72 w-72 rounded-full bg-indigo-100/60 blur-3xl" />
 
         <div className="relative z-10 w-full max-w-md">
+
           <Link to="/" className="mb-9 flex items-center justify-center gap-3 lg:hidden">
             <div className="rounded-xl bg-orange-500 p-2.5 text-white">
               <BookOpen size={24} />
@@ -128,16 +158,20 @@ export default function Signup() {
           </Link>
 
           <div className="rounded-[2rem] border border-white bg-white/90 p-7 shadow-[0_25px_80px_-25px_rgba(15,23,42,0.22)] backdrop-blur-xl sm:p-10">
+
             <div className="mb-8">
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
                 <User size={23} />
               </div>
+
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-orange-600">
                 Get started
               </p>
+
               <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900">
                 Create your account
               </h2>
+
               <p className="mt-2 text-sm leading-6 text-slate-500">
                 A few details and you're part of the community.
               </p>
@@ -150,12 +184,18 @@ export default function Signup() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
+
               <div>
                 <label className="mb-2 block text-sm font-bold text-slate-700">
                   Full name
                 </label>
+
                 <div className="group relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition group-focus-within:text-orange-500" size={19} />
+                  <User
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition group-focus-within:text-orange-500"
+                    size={19}
+                  />
+
                   <input
                     type="text"
                     name="name"
@@ -175,8 +215,13 @@ export default function Signup() {
                 <label className="mb-2 block text-sm font-bold text-slate-700">
                   Email address
                 </label>
+
                 <div className="group relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition group-focus-within:text-orange-500" size={19} />
+                  <Mail
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition group-focus-within:text-orange-500"
+                    size={19}
+                  />
+
                   <input
                     type="email"
                     name="email"
@@ -194,8 +239,13 @@ export default function Signup() {
                 <label className="mb-2 block text-sm font-bold text-slate-700">
                   Password
                 </label>
+
                 <div className="group relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition group-focus-within:text-orange-500" size={19} />
+                  <Lock
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition group-focus-within:text-orange-500"
+                    size={19}
+                  />
+
                   <input
                     type={showPassword ? "text" : "password"}
                     name="password"
@@ -208,35 +258,52 @@ export default function Signup() {
                     required
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 py-4 pl-12 pr-12 text-sm outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-100"
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label="Toggle password visibility" className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-orange-500">
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label="Toggle password visibility"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-orange-500"
+                  >
                     {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
                   </button>
                 </div>
+
                 <p className="mt-2 text-xs text-slate-400">
                   Use at least 8 characters for your password.
                 </p>
               </div>
 
-              <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#111a32] py-4 text-sm font-extrabold text-white shadow-lg shadow-slate-900/15 transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60">
-                {loading ? "Sending verification code..." : "Create account"}
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#111a32] py-4 text-sm font-extrabold text-white shadow-lg shadow-slate-900/15 transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? "Creating your account..." : "Create account"}
                 {!loading && <ArrowRight size={18} />}
               </button>
             </form>
 
             <div className="mt-6 flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">
               <CheckCircle2 className="mt-0.5 shrink-0 text-orange-500" size={16} />
-              We'll send a verification code to your email to activate your account.
+              Your account will be created directly. No email OTP is required for this college demo.
             </div>
 
             <p className="mt-7 text-center text-sm text-slate-500">
               Already have an account?{" "}
-              <Link to="/login" className="font-extrabold text-orange-600 hover:text-orange-700">
+              <Link
+                to="/login"
+                className="font-extrabold text-orange-600 hover:text-orange-700"
+              >
                 Sign in
               </Link>
             </p>
           </div>
 
-          <Link to="/" className="mt-7 block text-center text-sm font-semibold text-slate-500 transition hover:text-orange-600">
+          <Link
+            to="/"
+            className="mt-7 block text-center text-sm font-semibold text-slate-500 transition hover:text-orange-600"
+          >
             ← Back to home
           </Link>
         </div>
