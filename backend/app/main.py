@@ -21,6 +21,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:5174",
         "https://campus-share-sigma-blush.vercel.app",
+        "https://campus-share-5h71.vercel.app",
         "https://campus-share-git-main-aadityarajs-projects-8d59cfa1.vercel.app",
         "https://campus-share-o19dxyqc9-aadityarajs-projects-8d59cfa1.vercel.app"
     ],
